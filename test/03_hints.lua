@@ -40,7 +40,8 @@ do
       local tw = nvim.nvim_win_get_width(cfg.win)
       local tsp = vim.fn.win_screenpos(cfg.win)
       local hsp = vim.fn.win_screenpos(w)
-      local want_col = tsp[2] + tw - 1
+      -- badge is 3 cells wide, flush right: left edge at tw - 3
+      local want_col = tsp[2] + tw - 3
       if hsp[1] ~= tsp[1] or hsp[2] ~= want_col then
         ok_geo = false
         print("   misplaced hint: target=" .. vim.inspect(tsp) .. " width="
@@ -58,7 +59,7 @@ do
       found = found + 1
       check("hint config: focusable=false, border=none",
         cfg.focusable == false and cfg.border == "none" and cfg.anchor == "NE")
-      check("hint is 1x1", cfg.width == 1 and cfg.height == 1)
+      check("hint is 3-wide badge", cfg.width == 3 and cfg.height == 1)
     end
   end
   check("found both hints via config", found == 2)
@@ -80,7 +81,7 @@ do
       local tw = nvim.nvim_win_get_width(f)
       local tsp = vim.fn.win_screenpos(f)
       local hsp = vim.fn.win_screenpos(w)
-      check("float hint at top-right corner", hsp[1] == tsp[1] and hsp[2] == tsp[2] + tw - 1)
+      check("float hint at top-right corner", hsp[1] == tsp[1] and hsp[2] == tsp[2] + tw - 3)
     end
   end
   check("float hint opened", found_float_hint)

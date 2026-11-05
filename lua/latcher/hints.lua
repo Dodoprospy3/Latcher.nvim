@@ -38,16 +38,19 @@ function M.show(bynum)
       goto continue
     end
 
+    -- Badge is 3 cells wide ("[N]"), flush right with the target window so it
+    -- is easy to spot at a glance.
+    local badge = ("[%d]"):format(num)
     local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, true, { tostring(num) })
+    vim.api.nvim_buf_set_lines(buf, 0, -1, true, { badge })
 
     local ok, hint_win = pcall(vim.api.nvim_open_win, buf, false, {
       relative = "win",
       win = win,
       anchor = "NE",
       row = 0,
-      col = width - 1, -- flush with the target's top-right corner cell
-      width = 1,
+      col = width - #badge, -- badge's right edge flush with target's right edge
+      width = #badge,
       height = 1,
       border = "none",
       focusable = false,
