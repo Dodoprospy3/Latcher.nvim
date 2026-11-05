@@ -9,9 +9,8 @@
 --     use relative="editor" with absolute screen positions computed via
 --     vim.fn.win_screenpos(). During navigation the windows cannot move
 --     (input is blocking), so screen positions stay valid.
---   * Hints have a visible border and explicit text highlighting so they stand
---     out against any colorscheme. The `LatcherHint` highlight group can be
---     overridden by the user.
+--   * Hints have a visible border, explicit colors, and are refreshed on every
+--     show so they stand out against any colorscheme.
 --   * All hint windows and their scratch buffers are tracked and closed/deleted
 --     together, so nothing leaks after a selection or cancellation.
 
@@ -62,7 +61,6 @@ local function hint_config(win, badge_width)
     height = 1,
     border = "single",
     focusable = false,
-    style = "minimal", -- no line numbers, foldcolumn, etc. inside the hint
     zindex = HINT_ZINDEX,
   }
 end
@@ -71,7 +69,7 @@ end
 -- Returns nil on success, or a (possibly multi-line) string describing failures.
 -- Partial failure is non-fatal: the hints that could be created are still shown.
 function M.show(bynum)
-  -- Ensure the highlight group is set fresh (colorschemes may reset it).
+  -- Set highlight fresh (colorschemes may reset it between invocations).
   vim.api.nvim_set_hl(0, "LatcherHint", {
     fg = "#ffffff",
     bg = "#ff0000",
@@ -118,6 +116,9 @@ function M.show(bynum)
   if #errors > 0 then
     return table.concat(errors, "\n")
   end
+
+  -- Force a redraw so the hints appear immediately while we block on input.
+  vim.cmd("redraw")
   return nil
 end
 
