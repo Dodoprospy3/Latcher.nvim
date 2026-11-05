@@ -9,11 +9,9 @@
 --     use relative="editor" with absolute screen positions computed via
 --     vim.fn.win_screenpos(). During navigation the windows cannot move
 --     (input is blocking), so screen positions stay valid.
---   * Badge is 3 cells wide ("[N]"), flush right with the target window so it
---     is easy to spot at a glance.
---   * Hints use explicit bright colors (red background, white bold text) so
---     they stand out against any colorscheme. The `LatcherHint` highlight
---     group can still be overridden by the user.
+--   * Hints have a visible border and explicit text highlighting so they stand
+--     out against any colorscheme. The `LatcherHint` highlight group can be
+--     overridden by the user.
 --   * All hint windows and their scratch buffers are tracked and closed/deleted
 --     together, so nothing leaks after a selection or cancellation.
 
@@ -23,6 +21,8 @@ local M = {}
 local open_hints = {}
 
 local HINT_ZINDEX = 300
+
+local hint_ns = vim.api.nvim_create_namespace("latcher")
 
 --- Compute editor-relative float config so the badge sits flush with the
 --- target window's top-right corner cell.
@@ -60,7 +60,7 @@ local function hint_config(win, badge_width)
     col = screen_col + width - badge_width - 1,
     width = badge_width,
     height = 1,
-    border = "none",
+    border = "single",
     focusable = false,
     style = "minimal", -- no line numbers, foldcolumn, etc. inside the hint
     zindex = HINT_ZINDEX,
@@ -71,6 +71,13 @@ end
 -- Returns nil on success, or a (possibly multi-line) string describing failures.
 -- Partial failure is non-fatal: the hints that could be created are still shown.
 function M.show(bynum)
+  -- Ensure the highlight group is set fresh (colorschemes may reset it).
+  vim.api.nvim_set_hl(0, "LatcherHint", {
+    fg = "#ffffff",
+    bg = "#ff0000",
+    bold = true,
+  })
+
   local errors = {}
   for num, win in pairs(bynum) do
     -- Badge is 3 cells wide ("[N]").
@@ -79,6 +86,12 @@ function M.show(bynum)
 
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_lines(buf, 0, -1, true, { badge })
+
+    -- Explicitly highlight the badge text with extmark.
+    vim.api.nvim_buf_set_extmark(buf, hint_ns, 0, 0, {
+      end_col = badge_width,
+      hl_group = "LatcherHint",
+    })
 
     local cfg = hint_config(win, badge_width)
     if not cfg then
