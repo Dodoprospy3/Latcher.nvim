@@ -5,10 +5,12 @@
 --   * Hints are floating windows, not extmarks or virtual text. That guarantees
 --     zero modification of any user buffer (extmarks can be written out with a
 --     buffer in some workflows).
---   * Each hint is anchored to its target window with relative="win", anchor
---     "NE", col = target width - 1, so the single digit sits flush with the
---     target's top-right corner cell. Anchoring to another floating window is
---     supported, so floating targets work exactly like splits.
+--   * relative="win" anchored floats do not render in terminal Neovim, so hints
+--     use relative="editor" with absolute screen positions computed via
+--     vim.fn.win_screenpos(). During navigation the windows cannot move
+--     (input is blocking), so screen positions stay valid.
+--   * Badge is 3 cells wide ("[N]"), flush right with the target window so it
+--     is easy to spot at a glance.
 --   * The hint window borrows its colors from the user's colorscheme via the
 --     `LatcherHint` highlight group (linked to `Visual` by default) mapped
 --     through winhl, so the badge looks native in every colorscheme.
@@ -22,41 +24,70 @@ local open_hints = {}
 
 local HINT_ZINDEX = 300
 
+--- Compute editor-relative float config so the badge sits flush with the
+--- target window's top-right corner cell.
+-- @param win target window id
+-- @param badge_width width of the hint badge (number of cells)
+-- @return config table, or nil if the window position could not be determined
+local function hint_config(win, badge_width)
+  if not vim.api.nvim_win_is_valid(win) then
+    return nil
+  end
+
+  local width = vim.api.nvim_win_get_width(win)
+  if width < 1 then
+    return nil
+  end
+
+  -- win_screenpos returns 1-based screen coordinates of the window's top-left.
+  local ok, pos = pcall(vim.fn.win_screenpos, win)
+  if not ok or type(pos) ~= "table" or #pos < 2 then
+    return nil
+  end
+  local screen_row, screen_col = pos[1], pos[2]
+  if screen_row < 1 or screen_col < 1 then
+    return nil
+  end
+
+  -- editor coordinates are 0-based; win_screenpos returns 1-based screen
+  -- coordinates. Badge's right edge flush with the target's right edge:
+  -- left edge at screen_col + width - badge_width (1-based), minus 1 for
+  -- 0-based editor coords.
+  return {
+    relative = "editor",
+    anchor = "NW",
+    row = screen_row - 1,
+    col = screen_col + width - badge_width - 1,
+    width = badge_width,
+    height = 1,
+    border = "none",
+    focusable = false,
+    style = "minimal", -- no line numbers, foldcolumn, etc. inside the hint
+    zindex = HINT_ZINDEX,
+  }
+end
+
 --- Open hint windows for every {number -> window} pair.
 -- Returns nil on success, or a (possibly multi-line) string describing failures.
 -- Partial failure is non-fatal: the hints that could be created are still shown.
 function M.show(bynum)
   local errors = {}
   for num, win in pairs(bynum) do
-    if not vim.api.nvim_win_is_valid(win) then
-      errors[#errors + 1] = ("target window %d closed before hint could be shown"):format(win)
-      goto continue
-    end
-    local width = vim.api.nvim_win_get_width(win)
-    if width < 1 then
-      errors[#errors + 1] = ("target window %d has no columns"):format(win)
-      goto continue
-    end
-
-    -- Badge is 3 cells wide ("[N]"), flush right with the target window so it
-    -- is easy to spot at a glance.
+    -- Badge is 3 cells wide ("[N]").
     local badge = ("[%d]"):format(num)
+    local badge_width = #badge
+
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_lines(buf, 0, -1, true, { badge })
 
-    local ok, hint_win = pcall(vim.api.nvim_open_win, buf, false, {
-      relative = "win",
-      win = win,
-      anchor = "NE",
-      row = 0,
-      col = width - #badge, -- badge's right edge flush with target's right edge
-      width = #badge,
-      height = 1,
-      border = "none",
-      focusable = false,
-      style = "minimal", -- no line numbers, foldcolumn, etc. inside the hint
-      zindex = HINT_ZINDEX,
-    })
+    local cfg = hint_config(win, badge_width)
+    if not cfg then
+      errors[#errors + 1] = ("could not determine screen position of window %d"):format(win)
+      pcall(vim.api.nvim_buf_delete, buf, { force = true })
+      goto continue
+    end
+
+    local ok, hint_win = pcall(vim.api.nvim_open_win, buf, false, cfg)
     if not ok then
       errors[#errors + 1] = ("could not show hint for window %d: %s"):format(
         win, tostring(hint_win))

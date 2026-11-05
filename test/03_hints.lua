@@ -26,7 +26,9 @@ do
   local count = 0
   for _, w in ipairs(nvim.nvim_tabpage_list_wins(0)) do
     local cfg = nvim.nvim_win_get_config(w)
-    if cfg.relative == "win" and cfg.win == w1 or cfg.win == w2 then
+    if cfg.relative == "editor" and cfg.width == 3 and cfg.height == 1
+      and cfg.border == "none" and cfg.focusable == false and cfg.zindex == 300
+    then
       count = count + 1
     end
   end
@@ -34,18 +36,29 @@ do
 
   -- geometry: each hint sits at the target's top-right corner cell
   local ok_geo = true
+  local targets = { [w1] = true, [w2] = true }
   for _, w in ipairs(nvim.nvim_tabpage_list_wins(0)) do
     local cfg = nvim.nvim_win_get_config(w)
-    if cfg.relative == "win" and (cfg.win == w1 or cfg.win == w2) then
-      local tw = nvim.nvim_win_get_width(cfg.win)
-      local tsp = vim.fn.win_screenpos(cfg.win)
+    if cfg.relative == "editor" and cfg.width == 3 and cfg.height == 1
+      and cfg.border == "none" and cfg.focusable == false and cfg.zindex == 300
+    then
+      -- find which target this hint belongs to by matching row + right edge
       local hsp = vim.fn.win_screenpos(w)
-      -- badge is 3 cells wide, flush right: left edge at tw - 3
-      local want_col = tsp[2] + tw - 3
-      if hsp[1] ~= tsp[1] or hsp[2] ~= want_col then
+      local matched = false
+      for target in pairs(targets) do
+        local tw = nvim.nvim_win_get_width(target)
+        local tsp = vim.fn.win_screenpos(target)
+        local want_row = tsp[1]
+        local want_col = tsp[2] + tw - 3
+        if hsp[1] == want_row and hsp[2] == want_col then
+          matched = true
+          break
+        end
+      end
+      if not matched then
         ok_geo = false
-        print("   misplaced hint: target=" .. vim.inspect(tsp) .. " width="
-          .. tw .. " hint=" .. vim.inspect(hsp) .. " want_col=" .. want_col)
+        print("   misplaced hint: hint=" .. vim.inspect(hsp) .. " targets="
+          .. vim.inspect(targets))
       end
     end
   end
@@ -55,10 +68,12 @@ do
   local found = 0
   for _, w in ipairs(nvim.nvim_tabpage_list_wins(0)) do
     local cfg = nvim.nvim_win_get_config(w)
-    if cfg.relative == "win" and (cfg.win == w1 or cfg.win == w2) then
+    if cfg.relative == "editor" and cfg.width == 3 and cfg.height == 1
+      and cfg.border == "none" and cfg.focusable == false and cfg.zindex == 300
+    then
       found = found + 1
-      check("hint config: focusable=false, border=none",
-        cfg.focusable == false and cfg.border == "none" and cfg.anchor == "NE")
+      check("hint config: focusable=false, border=none, anchor=NW",
+        cfg.focusable == false and cfg.border == "none" and cfg.anchor == "NW")
       check("hint is 3-wide badge", cfg.width == 3 and cfg.height == 1)
     end
   end
@@ -74,14 +89,21 @@ do
   local err = hints.show({ ["7"] = f })
   check("float hint no error", err == nil and tostring(err))
   local found_float_hint = false
+  local fsp = vim.fn.win_screenpos(f)
   for _, w in ipairs(nvim.nvim_tabpage_list_wins(0)) do
     local cfg = nvim.nvim_win_get_config(w)
-    if cfg.relative == "win" and cfg.win == f then
-      found_float_hint = true
-      local tw = nvim.nvim_win_get_width(f)
-      local tsp = vim.fn.win_screenpos(f)
+    if cfg.relative == "editor" and cfg.width == 3 and cfg.height == 1
+      and cfg.border == "none" and cfg.focusable == false and cfg.zindex == 300
+    then
       local hsp = vim.fn.win_screenpos(w)
-      check("float hint at top-right corner", hsp[1] == tsp[1] and hsp[2] == tsp[2] + tw - 3)
+      -- only check the hint on the same row as the float (split hints are on
+      -- different rows)
+      if hsp[1] == fsp[1] then
+        found_float_hint = true
+        local tw = nvim.nvim_win_get_width(f)
+        check("float hint at top-right corner",
+          hsp[1] == fsp[1] and hsp[2] == fsp[2] + tw - 3)
+      end
     end
   end
   check("float hint opened", found_float_hint)
@@ -94,7 +116,9 @@ do
   local leftovers = 0
   for _, w in ipairs(nvim.nvim_tabpage_list_wins(0)) do
     local cfg = nvim.nvim_win_get_config(w)
-    if cfg.relative == "win" and (cfg.win == w1 or cfg.win == w2) then
+    if cfg.relative == "editor" and cfg.width == 3 and cfg.height == 1
+      and cfg.border == "none" and cfg.focusable == false and cfg.zindex == 300
+    then
       leftovers = leftovers + 1
     end
   end
