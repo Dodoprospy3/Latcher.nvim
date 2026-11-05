@@ -1,0 +1,37 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim:
+          - v0.10.4
+          - v0.11.7
+          - stable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.neovim }}
+
+      - name: Show Neovim version
+        run: nvim --version | head -3
+
+      - name: Run tests
+        run: |
+          for t in test/0*.lua; do
+            echo "== $t =="
+            nvim -u NONE -i NONE -N --headless \
+              --cmd 'set rtp+=.' \
+              -c "luafile $t" -c 'qa!'
+          done

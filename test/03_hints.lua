@@ -1,4 +1,7 @@
-package.path = "/home/adam/latcher.nvim/lua/?.lua;" .. package.path
+-- Resolve the repo root from this script's path so tests run from any cwd/CI.
+local script = debug.getinfo(1, "S").source:sub(2)
+local root = vim.fn.fnamemodify(script, ":p:h:h")
+package.path = root .. "/lua/?.lua;" .. package.path
 local hints = require("latcher.hints")
 local nvim = vim.api
 

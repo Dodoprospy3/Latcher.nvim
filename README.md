@@ -1,23 +1,51 @@
 # Latcher.nvim
 
-Quick navigation between currently visible Neovim windows using numbered visual
-hints. Pure Lua, no dependencies, Neovim 0.10+.
+**Numbered window navigation for Neovim.** Run `:Latcher`, see `[1]`–`[9]` in
+the top-right corner of every visible window, type a number, and jump there.
 
-<img width="6px" height="6px" alt=""> <!-- kept intentionally minimal -->
+![Latcher demo: three Neovim windows with [1], [2], and [3] badges in their top-right corners](assets/demo.gif)
+
+[![test](https://github.com/Dodoprospy3/Latcher.nvim/actions/workflows/test.yml/badge.svg)](https://github.com/Dodoprospy3/Latcher.nvim/actions/workflows/test.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Neovim 0.10+](https://img.shields.io/badge/Neovim-0.10%2B-green.svg)](https://neovim.io)
 
 ## Features
 
-- `:Latcher` — show a small numbered hint in the top-right corner of every
-  eligible visible window (splits and floating windows), then type a number to
-  jump to that window. `<Esc>` cancels. Maximum of 9 targets.
-- `:LatcherReassign` — assign a number 1-9 to the buffer in the current
-  window. If the number already belongs to another window, that window loses
-  the number (it shows no hint until it wins one again); nothing else shifts or
-  swaps.
-- Numbers follow buffer creation order initially; manual assignments persist
-  for the session.
-- Hint windows never touch any buffer's contents, and are fully cleaned up
-  after every selection or cancellation.
+- **`:Latcher`** — number every eligible visible window (splits *and*
+  floating windows), then type `1`–`9` to jump. `<Esc>` cancels.
+- **`:LatcherReassign`** — pin a number `1`–`9` to the current window. The
+  assignment persists for the session.
+- **No shifting, no swapping** — if you reassign a number that belongs to
+  another window, that window simply loses its hint. Every other number stays
+  put.
+- **Zero dependencies** — pure Lua, built-in Neovim API only, Neovim 0.10+.
+- **Never touches your buffers** — hints are floating windows, not extmarks or
+  virtual text, so no buffer contents are ever modified.
+- **Always cleans up** — hints are removed after a jump, a cancel, or an error.
+
+## How it differs
+
+Most window switchers use letter labels or search-driven jumps. Latcher is
+deliberately numeric and persistent:
+
+| | Latcher | Letter/search pickers |
+|---|---|---|
+| Labels | `1`–`9`, one keystroke | letters (plugin-dependent) |
+| Floating windows | included | varies |
+| Persistent manual numbers | yes | usually no |
+| Dependencies | none | varies |
+| Buffer modifications | none | some use extmarks |
+
+If you want fuzzy search or letter-based labels, tools like
+[nvim-window-picker](https://github.com/s1n7ax/nvim-window-picker),
+[flash.nvim](https://github.com/folke/flash.nvim), or
+[harpoon](https://github.com/ThePrimeagen/harpoon) are excellent. Latcher is
+for people who want the same window to always answer to the same digit.
+
+## Requirements
+
+- Neovim **0.10+** (CI tests 0.10, 0.11, and stable)
+- No external dependencies
 
 ## Installation
 
@@ -26,77 +54,117 @@ hints. Pure Lua, no dependencies, Neovim 0.10+.
 ```lua
 {
   "Dodoprospy3/Latcher.nvim",
-  cmd = "Latcher",
-  config = function()
-    require("latcher").setup()
-  end,
+  lazy = false, -- tiny plugin: registers :Latcher at startup
+  opts = {},
   keys = {
-    { "<leader>w", "<cmd>Latcher<cr>", desc = "Jump to visible window" },
-    { "<leader>W", "<cmd>LatcherReassign<cr>", desc = "Reassign window number" },
+    { "<leader>w", "<cmd>Latcher<cr>", desc = "Jump to a visible window" },
+    { "<leader>W", "<cmd>LatcherReassign<cr>", desc = "Assign a window number" },
   },
 }
 ```
 
-The plugin also works when loaded eagerly (`lazy = false`) — the
-`plugin/latcher.lua` entry point calls `setup()` automatically on startup.
+`opts = {}` calls `require("latcher").setup()`. The plugin also calls setup
+automatically from `plugin/latcher.lua`, so it works with any plugin manager.
+
+### vim.pack (Neovim 0.12+)
+
+```lua
+vim.pack.add({ "https://github.com/Dodoprospy3/Latcher.nvim" })
+require("latcher").setup()
+```
 
 ### Manual
-
-Copy the repository into your runtimepath, e.g.
 
 ```sh
 git clone https://github.com/Dodoprospy3/Latcher.nvim \
   ~/.local/share/nvim/site/pack/latcher/start/Latcher.nvim
 ```
 
-Then call `require("latcher").setup()` from your config (or rely on the
-automatic startup entry point).
+Then restart Neovim. The startup entry point defines the commands for you.
+
+## Usage
+
+1. Open two or more windows (`:split`, `:vsplit`, or a floating window).
+2. Run `:Latcher` (or your mapping).
+3. A bright `[N]` badge appears at the top-right of each eligible window.
+4. Type the number of the window you want. `<Esc>` or `<C-c>` cancels.
+5. Run `:LatcherReassign`, then type a digit, to pin that number to the current
+   window.
+
+Keys that are not shown numbers are ignored while Latcher waits, so a stray
+keypress will not break the session.
+
+## How numbering works
+
+1. Every visible, focusable window displaying a valid buffer is eligible
+   (splits and floats alike).
+2. Windows are ordered by buffer number, then by window id, and the first nine
+   receive `1`–`9`.
+3. Manual assignments from `:LatcherReassign` always win and persist for the
+   Neovim session.
+4. If a manual assignment takes a number from another window, that window is
+   *stripped*: it shows no hint until it wins a number again naturally.
+   Nothing else shifts or swaps.
 
 ## Commands
 
-| Command | Meaning |
-|---------|---------|
-| `:Latcher` | Enter navigation mode: show hints, type a number to jump. `<Esc>` cancels. |
-| `:LatcherReassign` | Assign a number 1-9 to the current window (read as one keystroke). |
+| Command | Description |
+|---|---|
+| `:Latcher` | Show hints and wait for a digit `1`–`9`. `<Esc>` cancels. |
+| `:LatcherReassign` | Assign the next typed digit `1`–`9` to the current window. |
+| `:checkhealth latcher` | Verify the installation. |
 
 ## Lua API
 
 ```lua
-require("latcher").setup({})
+require("latcher").setup({})   -- define commands and highlight
+require("latcher").start()     -- same as :Latcher
+require("latcher").reassign()  -- same as :LatcherReassign
 ```
 
-`setup` accepts an empty table (reserved for future options; unknown keys are
-rejected explicitly rather than silently ignored).
-
-The same actions are exposed as `require("latcher").start()` and
-`require("latcher").reassign()` for custom mappings.
-
-## How numbering works
-
-1. Every visible, focusable window displaying a valid buffer is eligible.
-2. Windows are ordered by buffer creation order (buffer numbers) and then by
-   window id, so duplicate buffers shown in several windows are deterministic.
-3. The first 9 windows get numbers 1-9 in that order.
-4. Manual assignments from `:LatcherReassign` always win. If you assign number
-   N to the current window and N belonged to another window, that window is
-   stripped: it shows no hint until it wins a number naturally again. No other
-   window shifts or swaps.
-5. Hints are floating windows anchored to each target's top-right corner —
-   they track splits and float windows automatically.
+`setup()` accepts an empty table. Unknown keys raise an error instead of being
+silently ignored; the table is reserved for future options.
 
 ## Customization
 
-Hints use the `LatcherHint` highlight group (linked to `Visual` by default).
-Override it in your colorscheme config, e.g.
+Hints use the `LatcherHint` highlight group — white bold text on a red
+background by default:
 
 ```lua
-vim.api.nvim_set_hl(0, "LatcherHint", { bold = true, fg = "#ffffff", bg = "#45475a" })
+vim.api.nvim_set_hl(0, "LatcherHint", {
+  fg = "#ffffff",
+  bg = "#d20f39",
+  bold = true,
+})
 ```
 
-## Requirements
+The highlight can also be overridden per colorscheme in the usual way.
 
-- Neovim 0.10+
-- No external dependencies (pure Lua, built-in API only)
+## Help
+
+```vim
+:help latcher
+```
+
+## Development
+
+```sh
+git clone https://github.com/Dodoprospy3/Latcher.nvim
+cd Latcher.nvim
+
+for t in test/0*.lua; do
+  nvim -u NONE -i NONE -N --headless --cmd 'set rtp+=.' \
+    -c "luafile $t" -c 'qa!'
+done
+```
+
+To regenerate the demo GIF, install [VHS](https://github.com/charmbracelet/vhs)
+and run `vhs demo.tape`.
+
+## Contributing
+
+Issues and pull requests are welcome. Please run the test suite above before
+opening a PR.
 
 ## License
 
