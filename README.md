@@ -5,7 +5,6 @@ the top-right corner of every visible window, type a number, and jump there.
 
 ![Latcher demo: three Neovim windows with [1], [2], and [3] badges in their top-right corners](assets/demo.gif)
 
-[![test](https://github.com/Dodoprospy3/Latcher.nvim/actions/workflows/test.yml/badge.svg)](https://github.com/Dodoprospy3/Latcher.nvim/actions/workflows/test.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Neovim 0.10+](https://img.shields.io/badge/Neovim-0.10%2B-green.svg)](https://neovim.io)
 
@@ -44,7 +43,7 @@ for people who want the same window to always answer to the same digit.
 
 ## Requirements
 
-- Neovim **0.10+** (CI tests 0.10, 0.11, and stable)
+- Neovim **0.10+** (tested on 0.10, 0.11, and 0.12)
 - No external dependencies
 
 ## Installation
@@ -112,7 +111,6 @@ keypress will not break the session.
 |---|---|
 | `:Latcher` | Show hints and wait for a digit `1`–`9`. `<Esc>` cancels. |
 | `:LatcherReassign` | Assign the next typed digit `1`–`9` to the current window. |
-| `:checkhealth latcher` | Verify the installation. |
 
 ## Lua API
 
@@ -140,12 +138,6 @@ vim.api.nvim_set_hl(0, "LatcherHint", {
 
 The highlight can also be overridden per colorscheme in the usual way.
 
-## Help
-
-```vim
-:help latcher
-```
-
 ## Development
 
 ```sh
@@ -157,9 +149,6 @@ for t in test/0*.lua; do
     -c "luafile $t" -c 'qa!'
 done
 ```
-
-To regenerate the demo GIF, install [VHS](https://github.com/charmbracelet/vhs)
-and run `vhs demo.tape`.
 
 ## Contributing
 

@@ -85,10 +85,9 @@ function M.start()
   table.sort(nums)
   local parts = {}
   for _, num in ipairs(nums) do
-    parts[#parts + 1] = tostring(num)
+    parts[#parts + 1] = ("[%d]→win%d"):format(num, bynum[num])
   end
-  local msg = ("Latcher: type %s to jump  |  <Esc> to cancel"):format(
-    table.concat(parts, ", "))
+  local msg = ("Jump: %s | <Esc> to cancel"):format(table.concat(parts, "  "))
   vim.api.nvim_echo({ { msg, "None" } }, true, {})
   local ok2, chosen = pcall(function()
     local hint_err = hints.show(bynum)
