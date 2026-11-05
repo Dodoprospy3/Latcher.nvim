@@ -11,9 +11,9 @@
 --     (input is blocking), so screen positions stay valid.
 --   * Badge is 3 cells wide ("[N]"), flush right with the target window so it
 --     is easy to spot at a glance.
---   * The hint window borrows its colors from the user's colorscheme via the
---     `LatcherHint` highlight group (linked to `Visual` by default) mapped
---     through winhl, so the badge looks native in every colorscheme.
+--   * Hints use explicit bright colors (red background, white bold text) so
+--     they stand out against any colorscheme. The `LatcherHint` highlight
+--     group can still be overridden by the user.
 --   * All hint windows and their scratch buffers are tracked and closed/deleted
 --     together, so nothing leaks after a selection or cancellation.
 
@@ -49,8 +49,8 @@ local function hint_config(win, badge_width)
     return nil
   end
 
-  -- editor coordinates are 0-based; win_screenpos returns 1-based screen
-  -- coordinates. Badge's right edge flush with the target's right edge:
+  -- editor coordinates are 0-based; win_screenpos returns 1-based.
+  -- Badge's right edge flush with the target's right edge:
   -- left edge at screen_col + width - badge_width (1-based), minus 1 for
   -- 0-based editor coords.
   return {

@@ -43,9 +43,12 @@ end
 function M.setup(opts)
   validate_options(opts)
 
+  -- Bright, unmissable hint color: white bold text on red background.
+  -- Set explicitly (not `default`) so it survives colorscheme changes.
   vim.api.nvim_set_hl(0, "LatcherHint", {
-    default = true,
-    link = "Visual", -- users can override with :highlight LatcherHint ...
+    fg = "#ffffff",
+    bg = "#ff0000",
+    bold = true,
   })
   define_commands()
 end

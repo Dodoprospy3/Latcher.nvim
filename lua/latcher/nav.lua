@@ -75,6 +75,9 @@ function M.start()
   end
 
   state.active = true
+  local hint_count = vim.tbl_count(bynum)
+  notify(("type 1-%d to jump, <Esc> to cancel"):format(hint_count),
+    vim.log.levels.INFO)
   local ok2, chosen = pcall(function()
     local hint_err = hints.show(bynum)
     if hint_err then
