@@ -62,7 +62,46 @@ local function hint_config(win, badge_width)
     border = "single",
     focusable = false,
     zindex = HINT_ZINDEX,
+    -- `style = "minimal"` turns off number/relativenumber/signcolumn/... for
+    -- the hint window. Without it the float inherits the user's gutter
+    -- settings: `number` + `relativenumber` draw "1" in the single-line hint
+    -- buffer and push the actual "[N]" text out of the visible area, making
+    -- every badge look like "1". See configure_hint_window() below for the
+    -- explicit per-option fallback.
+    style = "minimal",
   }
+end
+
+--- Window options that must be off in a hint window. New windows inherit
+--- window-local options from the window they are opened from, and gutters
+--- (number, signcolumn, foldcolumn, statuscolumn, winbar) would eat the
+--- badge's few cells and hide its text.
+local HINT_WIN_OPTIONS = {
+  number = false,
+  relativenumber = false,
+  signcolumn = "no",
+  foldcolumn = "0",
+  cursorline = false,
+  cursorcolumn = false,
+  colorcolumn = "",
+  statuscolumn = "",
+  winbar = "",
+  spell = false,
+  wrap = false,
+  list = false,
+  scrolloff = 0,
+  sidescrolloff = 0,
+}
+
+--- Disable inherited gutters/decorations so only the badge text is visible.
+--- `style = "minimal"` normally does this at open time, but colorschemes and
+--- autocmds can re-enable options afterwards, so enforce them explicitly.
+-- @param hint_win hint window id
+local function configure_hint_window(hint_win)
+  for opt, value in pairs(HINT_WIN_OPTIONS) do
+    -- pcall: some options (e.g. statuscolumn) do not exist on older releases.
+    pcall(vim.api.nvim_set_option_value, opt, value, { win = hint_win })
+  end
 end
 
 --- Open hint windows for every {number -> window} pair.
@@ -106,6 +145,7 @@ function M.show(bynum)
       goto continue
     end
 
+    configure_hint_window(hint_win)
     pcall(vim.api.nvim_set_option_value, "winhl", "Normal:LatcherHint", {
       win = hint_win,
     })

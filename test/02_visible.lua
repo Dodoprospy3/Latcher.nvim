@@ -87,7 +87,7 @@ end
 do
   nvim.nvim_command("split")
   local w4 = nvim.nvim_get_current_win()
-  nvim.nvim_command("setbuf " .. b1) -- show b1 again (already shown in w1)
+  nvim.nvim_win_set_buf(w4, b1) -- show b1 again (already shown in w1)
   local wins = targets.visible_sorted()
   local pos1, pos4
   for i, w in ipairs(wins) do
