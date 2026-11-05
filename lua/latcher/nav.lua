@@ -76,7 +76,12 @@ function M.start()
 
   state.active = true
   local hint_count = vim.tbl_count(bynum)
-  notify(("type 1-%d to jump, <Esc> to cancel"):format(hint_count),
+  -- Build a clear on-screen message listing every available number.
+  local parts = {}
+  for num = 1, hint_count do
+    parts[#parts + 1] = ("[%d]→win%d"):format(num, bynum[num])
+  end
+  notify(("Jump: %s | <Esc> to cancel"):format(table.concat(parts, "  ")),
     vim.log.levels.INFO)
   local ok2, chosen = pcall(function()
     local hint_err = hints.show(bynum)
