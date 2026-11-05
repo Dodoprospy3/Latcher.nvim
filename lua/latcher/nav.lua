@@ -75,15 +75,20 @@ function M.start()
   end
 
   state.active = true
-  local hint_count = vim.tbl_count(bynum)
-  -- Build a clear on-screen message listing every available number.
+  -- Build a clear on-screen message listing every available number. Numbers
+  -- are not necessarily contiguous (manual assignments + stripped windows),
+  -- so iterate the actual keys instead of 1..count.
+  local nums = {}
+  for num in pairs(bynum) do
+    nums[#nums + 1] = num
+  end
+  table.sort(nums)
   local parts = {}
-  for num = 1, hint_count do
+  for _, num in ipairs(nums) do
     parts[#parts + 1] = ("[%d]→win%d"):format(num, bynum[num])
   end
   local msg = ("Jump: %s | <Esc> to cancel"):format(table.concat(parts, "  "))
-  vim.api.nvim_echo({{msg, "None"}}, true, {})
-  vim.notify(msg, vim.log.levels.INFO)
+  vim.api.nvim_echo({ { msg, "None" } }, true, {})
   local ok2, chosen = pcall(function()
     local hint_err = hints.show(bynum)
     if hint_err then
