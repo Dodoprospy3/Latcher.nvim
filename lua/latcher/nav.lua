@@ -81,8 +81,9 @@ function M.start()
   for num = 1, hint_count do
     parts[#parts + 1] = ("[%d]→win%d"):format(num, bynum[num])
   end
-  notify(("Jump: %s | <Esc> to cancel"):format(table.concat(parts, "  ")),
-    vim.log.levels.INFO)
+  local msg = ("Jump: %s | <Esc> to cancel"):format(table.concat(parts, "  "))
+  vim.api.nvim_echo({{msg, "None"}}, true, {})
+  vim.notify(msg, vim.log.levels.INFO)
   local ok2, chosen = pcall(function()
     local hint_err = hints.show(bynum)
     if hint_err then
