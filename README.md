@@ -4,6 +4,7 @@
 the top-right corner of every visible window, type a number, and jump there.
 
 ![Latcher demo: three Neovim windows with [1], [2], and [3] badges in their top-right corners](assets/demo.gif)
+> NOTE: this GIF is a simluation and real visual styles or functionality may differ 
 
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Neovim 0.10+](https://img.shields.io/badge/Neovim-0.10%2B-green.svg)](https://neovim.io)
